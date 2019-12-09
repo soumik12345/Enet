@@ -7,7 +7,7 @@ from torch.nn import (
 from torchvision.models import resnet50
 
 
-class InitialBlock(nn.Module):
+class InitialBlock(Module):
 	
 	def __init__(self, in_channels, out_channels, bias=False, relu=True):
 		'''Enet Initial Block
@@ -39,7 +39,7 @@ class InitialBlock(nn.Module):
 
 
 
-class RegularBottleneck(nn.Module):
+class RegularBottleneck(Module):
 
 	def __init__(
 		self, channels, internal_ratio=4, kernel_size=3, padding=0,
