@@ -162,11 +162,11 @@ class Enet(Module):
 		x = self.bottleneck_3_6(x)
 		x = self.bottleneck_3_7(x)
 		# Stage 4
-		x = self.upsample_4(x)
+		x = self.upsample_4(x, max_indices_2, output_size=input_size_2)
 		x = self.bottleneck_4_1(x)
 		x = self.bottleneck_4_2(x)
 		# Stage 5
-		x = self.upsample_5(x)
+		x = self.upsample_5(x, max_indices_1, output_size=input_size_1)
 		x = self.bottleneck_5(x)
 		x = self.transposed_conv(x)
 		return x

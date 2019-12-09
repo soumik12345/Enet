@@ -1,6 +1,6 @@
 import torch
 from torch.nn import (
-	Module, Conv2d, ReLU, PReLU,
+	Module, Conv2d, ReLU, PReLU, Dropout2d,
 	Upsample, MaxPool2d, Sequential, MaxUnpool2d,
 	BatchNorm2d, AdaptiveAvgPool2d, ConvTranspose2d
 )
@@ -33,7 +33,7 @@ class InitialBlock(Module):
 		main = self.main_branch(x)
 		secondary = self.secondary_branch(x)
 		output = torch.cat((main, secondary), 1)
-		output = self.batch_norm(out)
+		output = self.batch_norm(output)
 		output = self.activation(output)
 		return output
 
@@ -52,7 +52,7 @@ class RegularBottleneckBlock(Module):
 			kernel_size		-> Kernel size for conv layer, block 2, main branch
 			padding			-> Zero padding for input
 			dilation		-> Dilation for conv layer, block 2, main branch
-			assymetric		-> conv layer, block 2, main branch is assymetric if true
+			asymmetric		-> conv layer, block 2, main branch is assymetric if true
 			dropout_prob	-> Probability for dropout
 			bias			-> Use a bias or not
 			relu			-> Use ReLU activation if true
@@ -61,7 +61,7 @@ class RegularBottleneckBlock(Module):
 		super().__init__()
 		internal_channels = channels // internal_ratio
 		
-		### Main Brach ###
+		### Main Branch ###
 		
 		# Block 1 Conv 1x1
 		self.main_conv_block_1 = Sequential(
@@ -74,7 +74,7 @@ class RegularBottleneckBlock(Module):
 		)
 
 		# Block 2
-		if assymetric:
+		if asymmetric:
 			self.main_conv_block_2 = Sequential(
 				Conv2d(
 					internal_channels, internal_channels,
@@ -121,12 +121,12 @@ class RegularBottleneckBlock(Module):
 
 	def forward(self, x):
 		'''Forward Pass for RegularBottleneckBlock'''
-		secondary_brach = x
-		main_brach = self.main_conv_block_1(x)
-		main_brach = self.main_conv_block_2(main_brach)
-		main_brach = self.main_conv_block_3(main_brach)
-		main_brach = self.dropout(main_brach)
-		output = main_brach + secondary_brach
+		secondary_branch = x
+		main_branch = self.main_conv_block_1(x)
+		main_branch = self.main_conv_block_2(main_branch)
+		main_branch = self.main_conv_block_3(main_branch)
+		main_branch = self.dropout(main_branch)
+		output = main_branch + secondary_branch
 		output = self.activation(output)
 		return output
 
@@ -200,23 +200,23 @@ class DownsampleBottleneckBlock(Module):
 	def forward(self, x):
 		'''Forward Pass for DownsampleBottleneckBlock'''
 		# Main Branch
-		main_brach = self.main_conv_block_1(x)
-		main_brach = self.main_conv_block_2(main_brach)
-		main_brach = self.main_conv_block_3(main_brach)
+		main_branch = self.main_conv_block_1(x)
+		main_branch = self.main_conv_block_2(main_branch)
+		main_branch = self.main_conv_block_3(main_branch)
 		# Secondary Branch
 		if self.return_indices:
-			secondary_brach, max_indices = self.secondary_maxpool(x)
+			secondary_branch, max_indices = self.secondary_maxpool(x)
 		else:
 			secondary_branch = self.secondary_maxpool(x)
 		# Padding
-		n, ch_main, h, w = main_brach.size()
+		n, ch_main, h, w = main_branch.size()
 		ch_sec = secondary_branch.size()[1]
 		padding = torch.zeros(n, ch_main - ch_sec, h, w)
 		if secondary_branch.is_cuda:
 			padding = padding.cuda()
 		# Concatenate
 		secondary_branch = torch.cat((secondary_branch, padding), 1)
-		output = secondary_branch + primary_branch
+		output = secondary_branch + main_branch
 		output = self.activation(output)
 		if self.return_indices:
 			return output, max_indices
@@ -242,6 +242,7 @@ class UpsampleBottleneckBlock(Module):
 			relu			-> Use ReLU activation if true
 		'''
 		super().__init__()
+		internal_channels = in_channels // internal_ratio
 
 		### Main Branch ###
 
@@ -300,12 +301,12 @@ class UpsampleBottleneckBlock(Module):
 		main_branch = self.main_branch_conv_3(main_branch)
 		main_branch = self.dropout(main_branch)
 		# Secondary Branch
-		secondary branch = self.secondary_conv(x)
-		secondary_brach = self.secondary_unpool(
-			secondary_brach, max_indices,
+		secondary_branch = self.secondary_conv(x)
+		secondary_branch = self.secondary_unpool(
+			secondary_branch, max_indices,
 			output_size=output_size
 		)
 		# Concatenate
-		output = main_branch + secondary_brach
+		output = main_branch + secondary_branch
 		output = self.activation(output)
 		return output
