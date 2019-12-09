@@ -39,7 +39,7 @@ class InitialBlock(Module):
 
 
 
-class RegularBottleneck(Module):
+class RegularBottleneckBlock(Module):
 
 	def __init__(
 		self, channels, internal_ratio=4, kernel_size=3, padding=0,
@@ -120,7 +120,7 @@ class RegularBottleneck(Module):
 	
 
 	def forward(self, x):
-		'''Forward Pass for RegularBottleneck'''
+		'''Forward Pass for RegularBottleneckBlock'''
 		secondary_brach = x
 		main_brach = self.main_conv_block_1(x)
 		main_brach = self.main_conv_block_2(main_brach)
