@@ -1,7 +1,7 @@
 import torch
 from torch.nn import (
-	Upsample, MaxPool2d,
 	Module, Conv2d, ReLU, PReLU,
+	Upsample, MaxPool2d, Sequential,
 	BatchNorm2d, AdaptiveAvgPool2d
 )
 from torchvision.models import resnet50
@@ -34,5 +34,98 @@ class InitialBlock(nn.Module):
 		secondary = self.secondary_branch(x)
 		output = torch.cat((main, secondary), 1)
 		output = self.batch_norm(out)
+		output = self.activation(output)
+		return output
+
+
+
+class RegularBottleneck(nn.Module):
+
+	def __init__(
+		self, channels, internal_ratio=4, kernel_size=3, padding=0,
+		dilation=1, asymmetric=False, dropout_prob=0, bias=False, relu=True):
+		'''Enet Regular Bottleneck Block
+		Reference: https://arxiv.org/abs/1606.02147
+		Params:
+			channels		-> Number of input and output channels
+			internal_ratio	-> Scale factor for channels
+			kernel_size		-> Kernel size for conv layer, block 2, main branch
+			padding			-> Zero padding for input
+			dilation		-> Dilation for conv layer, block 2, main branch
+			assymetric		-> conv layer, block 2, main branch is assymetric if true
+			dropout_prob	-> Probability for dropout
+			bias			-> Use a bias or not
+			relu			-> Use ReLU activation if true
+		'''
+		
+		super().__init__()
+		internal_channels = channels // internal_ratio
+		
+		### Main Brach ###
+		
+		# Block 1 Conv 1x1
+		self.main_conv_block_1 = Sequential(
+			Conv2d(
+				channels, internal_channels,
+				kernel_size=1, stride=1, bias=bias
+			),
+			BatchNorm2d(internal_channels),
+			ReLU() if relu else PReLU()
+		)
+
+		# Block 2
+		if assymetric:
+			self.main_conv_block_2 = Sequential(
+				Conv2d(
+					internal_channels, internal_channels,
+					kernel_size=(kernel_size, 1), stride=1,
+					padding=(padding, 0), dilation=dilation, bias=bias
+				),
+				BatchNorm2d(internal_channels),
+				ReLU() if relu else PReLU(),
+				Conv2d(
+					internal_channels, internal_channels,
+					kernel_size=(1, kernel_size), stride=1,
+					padding=(0, padding), dilation=dilation, bias=bias
+				),
+				BatchNorm2d(internal_channels),
+				ReLU() if relu else PReLU(),
+			)
+		else:
+			self.main_conv_block_2 = Sequential(
+				Conv2d(
+					internal_channels, internal_channels,
+					kernel_size=kernel_size, stride=1,
+					padding=padding, dilation=dilation, bias=bias
+				),
+				BatchNorm2d(internal_channels),
+				ReLU() if relu else PReLU(),
+			)
+		
+		# Block 3 Conv 1x1
+		self.main_conv_block_3 = Sequential(
+			Conv2d(
+				internal_channels, channels,
+				kernel_size=1, stride=1, bias=bias
+			),
+			BatchNorm2d(channels),
+			ReLU() if relu else PReLU(),
+		)
+
+		# Dropout Regularization
+		self.dropout = Dropout2d(p=dropout_prob)
+
+		# Activation
+		self.activation = ReLU() if relu else PReLU()
+	
+
+	def forward(self, x):
+		'''Forward Pass for RegularBottleneck'''
+		secondary_brach = x
+		main_brach = self.main_conv_block_1(x)
+		main_brach = self.main_conv_block_2(main_brach)
+		main_brach = self.main_conv_block_3(main_brach)
+		main_brach = self.dropout(main_brach)
+		output = main_brach + secondary_brach
 		output = self.activation(output)
 		return output
