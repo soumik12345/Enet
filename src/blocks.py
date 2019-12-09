@@ -1,8 +1,8 @@
 import torch
 from torch.nn import (
 	Module, Conv2d, ReLU, PReLU,
-	Upsample, MaxPool2d, Sequential,
-	BatchNorm2d, AdaptiveAvgPool2d
+	Upsample, MaxPool2d, Sequential, MaxUnpool2d,
+	BatchNorm2d, AdaptiveAvgPool2d, ConvTranspose2d
 )
 from torchvision.models import resnet50
 
@@ -149,7 +149,7 @@ class DownsampleBottleneckBlock(Module):
 			relu			-> Use ReLU activation if true
 		'''
 		super().__init__()
-		internal_channels = channels // internal_ratio
+		internal_channels = in_channels // internal_ratio
 		self.return_indices = return_indices
 
 		### Main Branch ###
@@ -222,3 +222,90 @@ class DownsampleBottleneckBlock(Module):
 			return output, max_indices
 		else:
 			return output
+
+
+
+class UpsampleBottleneckBlock(Module):
+
+	def __init__(
+		self, in_channels, out_channels,
+		internal_ratio=4, dropout_prob=0,
+		bias=False, relu=True):
+		'''Enet Upsampling Bottleneck Block
+		Reference: https://arxiv.org/abs/1606.02147
+		Params:
+			in_channels		-> Number of input channels
+			out_channels	-> Number of output channels
+			internal_ratio	-> Scale factor for channels
+			dropout_prob	-> Probability for dropout
+			bias			-> Use a bias or not
+			relu			-> Use ReLU activation if true
+		'''
+		super().__init__()
+
+		### Main Branch ###
+
+		# Block 1 Conv 1x1
+		self.main_branch_conv_1 = Sequential(
+			Conv2d(
+				in_channels, internal_channels,
+				kernel_size=1, bias=bias
+			),
+			BatchNorm2d(internal_channels),
+			ReLU() if relu else PReLU()
+		)
+
+		# Block 2 Transposed Convolution
+		self.main_branch_transpose_conv_2 = ConvTranspose2d(
+			internal_channels, internal_channels,
+			kernel_size=2, stride=2, bias=bias
+		)
+		self.main_branch_bn_2 = BatchNorm2d(internal_channels)
+		self.main_branch_act_2 = ReLU() if relu else PReLU
+
+		# Block 3 Conv 1x1
+		self.main_branch_conv_3 = Sequential(
+			Conv2d(
+				internal_channels, out_channels,
+				kernel_size=1, bias=bias
+			),
+			BatchNorm2d(out_channels),
+			ReLU() if relu else PReLU()
+		)
+
+		### Secondary Branch ###
+		self.secondary_conv = Sequential(
+			Conv2d(
+				in_channels, out_channels,
+				kernel_size=1, bias=bias
+			),
+			BatchNorm2d(out_channels)
+		)
+		self.secondary_unpool = MaxUnpool2d(kernel_size=2)
+
+		# Dropout Regularization
+		self.dropout = Dropout2d(p=dropout_prob)
+
+		# Activation
+		self.activation = ReLU() if relu else PReLU()
+	
+
+	def forward(self, x, max_indices, output_size):
+		'''Forward Pass for UpsampleBottleneckBlock'''
+		# Main Branch
+		main_branch = self.main_branch_conv_1(x)
+		main_branch = self.main_branch_transpose_conv_2(main_branch, output_size=output_size)
+		main_branch = self.main_branch_bn_2(main_branch)
+		main_branch = self.main_branch_act_2(main_branch)
+		main_branch = self.main_branch_conv_3(main_branch)
+		main_branch = self.dropout(main_branch)
+		# Secondary Branch
+		secondary branch = self.secondary_conv(x)
+		secondary_brach = self.secondary_unpool(
+			secondary_brach, max_indices,
+			output_size=output_size
+		)
+		# Concatenate
+		output = main_branch + secondary_brach
+		output = self.activation(output)
+		return output
