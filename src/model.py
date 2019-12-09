@@ -1,5 +1,5 @@
 from .blocks import *
-from torch.nn import Module
+from torch.nn import Module, ConvTranspose2d
 
 
 
@@ -104,4 +104,26 @@ class Enet(Module):
 			128, dilation=16, padding=16,
 			dropout_prob=0.1, relu=encoder_relu
 		)
-		
+
+		# Stage 4
+		self.upsample_4 = UpsampleBottleneckBlock(
+			128, 64, dropout_prob=0.1, relu=decoder_relu
+		)
+		self.bottleneck_4_1 = RegularBottleneckBlock(
+			64, padding=1, dropout_prob=0.1, relu=decoder_relu
+		)
+		self.bottleneck_4_2 = RegularBottleneckBlock(
+			64, padding=1, dropout_prob=0.1, relu=decoder_relu
+		)
+
+		# Stage 5
+		self.upsample_5 = UpsampleBottleneckBlock(
+			64, 16, dropout_prob=0.1, relu=decoder_relu
+		)
+		self.bottleneck_5_1 = RegularBottleneckBlock(
+			16, padding=1, dropout_prob=0.1, relu=decoder_relu
+		)
+		self.transposed_conv = ConvTranspose2d(
+			16, num_classes, kernel_size=3,
+            stride=2, padding=1, bias=False
+		)
