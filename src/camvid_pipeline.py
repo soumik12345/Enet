@@ -37,15 +37,24 @@ class CamVidDataset(Dataset):
 		image_id = self.images[index]
 		label_id = self.labels[index]
 		# Read Image
-		x = plt.imread(image_id)
-		x = [cv2.resize(x, (self.height, self.width), cv2.INTER_NEAREST)]
+		x = Image.open(image_id)
+		x = np.array(x)
+		x = [
+			cv2.resize(
+				x, (self.height, self.width),
+				cv2.INTER_LINEAR
+			)
+		]
 		x = np.stack(x, axis=2)
 		x = torch.tensor(x).transpose(0, 2).transpose(1, 3)
 		# Read Mask
 		y = Image.open(label_id)
 		y = np.array(y)
-		y = cv2.resize(y, (self.height, self.width), cv2.INTER_NEAREST)
-		y = torch.tensor([y])
+		y = [cv2.resize(
+			y, (self.height, self.width),
+			cv2.INTER_NEAREST
+		)]
+		y = torch.tensor(y)
 		return x.squeeze(), y.squeeze()
 
 
