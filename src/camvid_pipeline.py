@@ -42,6 +42,20 @@ def train(
 	model, train_dataloader, val_dataloader,
 	device, optimizer, train_step_size, val_step_size,
 	save_every, save_location, save_prefix, epochs):
+	'''Training Function for Campvid
+	Params:
+		model				-> Model
+		train_dataloader	-> Train Data Loader
+		val_dataloader		-> Validation Data Loader
+		device				-> Training Device
+		optimizer			-> Optimizer
+		train_step_size		-> Training Step Size
+		val_step_size		-> Validation Step Size
+		save_every			-> Saving Checkpoint
+		save_location		-> Checkpoint Saving Location
+		save_prefix			-> Checkpoint Prefix
+		epochs				-> Number of Training epochs
+	'''
 	train_loss_history, val_loss_history = [], []
 	for epoch in range(1, epochs + 1):
 		print('Epoch {}\n'.format(epoch))
