@@ -6,6 +6,15 @@ from matplotlib import pyplot as plt
 from torch.utils.data import Dataset
 
 
+def get_class_weights(loader, num_classes, c=1.02):
+    _, labels = next(iter(loader))
+    all_labels = labels.flatten()
+    each_class = np.bincount(all_labels, minlength=num_classes)
+    prospensity_score = each_class / len(all_labels)
+    class_weights = 1 / (np.log(c + prospensity_score))
+    return class_weights
+
+
 class CamVidDataset(Dataset):
 
 	def __init__(self, images, labels, height, width):
@@ -37,13 +46,13 @@ class CamVidDataset(Dataset):
 		y = np.array(y)
 		y = cv2.resize(y, (self.height, self.width), cv2.INTER_NEAREST)
 		y = torch.tensor([y])
-		return x, y
+		return x.squeeze(), y.squeeze()
 
 
 
 def train(
 	model, train_dataloader, val_dataloader,
-	device, loss, optimizer, train_step_size, val_step_size,
+	device, criterion, optimizer, train_step_size, val_step_size,
 	save_every, save_location, save_prefix, epochs):
 	'''Training Function for Campvid
 	Params:
@@ -51,7 +60,7 @@ def train(
 		train_dataloader	-> Train Data Loader
 		val_dataloader		-> Validation Data Loader
 		device				-> Training Device
-		loss				-> Loss Function
+		criterion           -> Loss Function
 		optimizer			-> Optimizer
 		train_step_size		-> Training Step Size
 		val_step_size		-> Validation Step Size
@@ -68,8 +77,8 @@ def train(
 		model.train()
 		for step in tqdm(range(train_step_size)):
 			x_batch, y_batch = next(iter(train_dataloader))
-			x_batch = x_batch.to(device)
-			y_batch = y_batch.to(device)
+			x_batch = x_batch.squeeze().to(device)
+			y_batch = y_batch.squeeze().to(device)
 			optimizer.zero_grad()
 			out = model(x_batch.float())
 			loss = criterion(out, y_batch.long())
@@ -83,8 +92,8 @@ def train(
 		model.eval()
 		for step in tqdm(range(val_step_size)):
 			x_val, y_val = next(iter(val_dataloader))
-			x_val = x_val.to(device)
-			y_val = y_val.to(device)
+			x_val = x_val.squeeze().to(device)
+			y_val = y_val.squeeze().to(device)
 			out = model(x_val.float())
 			out = out.data.max(1)[1]
 			val_loss += (y_val.long() - out.long()).sum()
