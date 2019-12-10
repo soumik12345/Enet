@@ -125,7 +125,7 @@ class Enet(Module):
 		)
 		self.transposed_conv = ConvTranspose2d(
 			16, num_classes, kernel_size=3,
-            stride=2, padding=1, bias=False
+            stride=2, padding=1, output_padding=1, bias=False
 		)
 	
 
