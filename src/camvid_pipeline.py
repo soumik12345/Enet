@@ -1,4 +1,6 @@
 import torch, cv2
+import numpy as np
+from tqdm import tqdm
 from PIL import Image
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset
@@ -27,20 +29,21 @@ class CamVidDataset(Dataset):
 		label_id = self.labels[index]
 		# Read Image
 		x = plt.imread(image_id)
-		x = cv2.resize(x, (self.height, self.width), cv2.INTER_NEAREST)
-		x = torch.tensor(x)
+		x = [cv2.resize(x, (self.height, self.width), cv2.INTER_NEAREST)]
+		x = np.stack(x, axis=2)
+		x = torch.tensor(x).transpose(0, 2).transpose(1, 3)
 		# Read Mask
 		y = Image.open(label_id)
 		y = np.array(y)
 		y = cv2.resize(y, (self.height, self.width), cv2.INTER_NEAREST)
-		y = torch.tensor(y)
+		y = torch.tensor([y])
 		return x, y
 
 
 
 def train(
 	model, train_dataloader, val_dataloader,
-	device, optimizer, train_step_size, val_step_size,
+	device, loss, optimizer, train_step_size, val_step_size,
 	save_every, save_location, save_prefix, epochs):
 	'''Training Function for Campvid
 	Params:
@@ -48,6 +51,7 @@ def train(
 		train_dataloader	-> Train Data Loader
 		val_dataloader		-> Validation Data Loader
 		device				-> Training Device
+		loss				-> Loss Function
 		optimizer			-> Optimizer
 		train_step_size		-> Training Step Size
 		val_step_size		-> Validation Step Size
@@ -67,7 +71,7 @@ def train(
 			x_batch = x_batch.to(device)
 			y_batch = y_batch.to(device)
 			optimizer.zero_grad()
-			out = enet(x_batch.float())
+			out = model(x_batch.float())
 			loss = criterion(out, y_batch.long())
 			loss.backward()
 			optimizer.step()
@@ -81,7 +85,7 @@ def train(
 			x_val, y_val = next(iter(val_dataloader))
 			x_val = x_val.to(device)
 			y_val = y_val.to(device)
-			out = enet(x_val.float())
+			out = model(x_val.float())
 			out = out.data.max(1)[1]
 			val_loss += (y_val.long() - out.long()).sum()
 		val_loss_history.append(val_loss)
@@ -90,7 +94,7 @@ def train(
 		if epoch % save_every == 0:
 			checkpoint = {
 				'epoch' : epoch,
-				'train_loss' : train loss,
+				'train_loss' : train_loss,
 				'val_loss' : val_loss,
 				'state_dict' : model.state_dict()
 			}
