@@ -123,5 +123,5 @@ def train(
 					epoch, train_loss, val_loss
 				)
 			)
-	print('\nTraining Done.\nTotal Mean Loss: {:6f}'.format(sum(train_losses) / epochs))
+	print('\nTraining Done.\nTotal Mean Loss: {:6f}'.format(sum(train_loss) / epochs))
 	return train_loss_history, val_loss_history
