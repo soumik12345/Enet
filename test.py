@@ -8,7 +8,8 @@ from torch.optim import Adam
 from matplotlib import pyplot as plt
 from torchvision.transforms import ToPILImage
 
-
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+print(device)
 
 train_images = sorted(glob('/home/ubuntu/vision-benchmark-datasets/camvid/train/*'))
 train_labels = sorted(glob('/home/ubuntu/vision-benchmark-datasets/camvid/trainannot/*'))
