@@ -142,7 +142,7 @@ def train(
 			loss.backward()
 			optimizer.step()
 			train_loss += loss.item()
-		train_loss_history.append(train_loss)
+		train_loss_history.append(train_loss // train_step_size)
 		print('\nTraining Loss: {}'.format(train_loss))
 		# Validation
 		val_loss = 0
