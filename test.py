@@ -48,8 +48,8 @@ train_loss_history, val_loss_history = train(
 
 plt.plot(train_loss_history, color = 'b', label = 'Training Loss')
 plt.legend()
-plt.savefig('./plots/plot-camvid-training-loss{}-epochs.png'.format(50))
+plt.savefig('./plots/plot-camvid-training-loss-{}-epochs.png'.format(50))
 
 plt.plot(val_loss_history, color = 'b', label = 'Validation Loss')
 plt.legend()
-plt.savefig('./plots/plot-camvid-val-loss{}-epochs.png'.format(50))
+plt.savefig('./plots/plot-camvid-val-loss-{}-epochs.png'.format(50))
