@@ -48,7 +48,6 @@ def decode_segmap(image):
         r[image == l] = label_colours[l, 0]
         g[image == l] = label_colours[l, 1]
         b[image == l] = label_colours[l, 2]
-
     rgb = np.zeros((image.shape[0], image.shape[1], 3)).astype(np.uint8)
     rgb[:, :, 0] = b
     rgb[:, :, 1] = g
