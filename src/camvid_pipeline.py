@@ -48,6 +48,7 @@ def decode_segmap(image):
         r[image == l] = label_colours[l, 0]
         g[image == l] = label_colours[l, 1]
         b[image == l] = label_colours[l, 2]
+
     rgb = np.zeros((image.shape[0], image.shape[1], 3)).astype(np.uint8)
     rgb[:, :, 0] = b
     rgb[:, :, 1] = g
@@ -152,7 +153,7 @@ def train(
 			y_val = y_val.squeeze().to(device)
 			out = model(x_val.float())
 			out = out.data.max(1)[1]
-			val_loss += (y_val.long() - out.long()).sum()
+			val_loss += (y_val.long() - out.long()).float().mean()
 		val_loss_history.append(val_loss)
 		print('\nValidation Loss: {}'.format(val_loss))
 		# Checkpoints
@@ -171,7 +172,7 @@ def train(
 				)
 			)
 	print(
-        '\nTraining Done.\nTraining Mean Loss: {:6f}\n\nValidation Mean Loss: {:6f}'.format(
+        '\nTraining Done.\nTraining Mean Loss: {:6f}\nValidation Mean Loss: {:6f}'.format(
             sum(train_loss_history) / epochs,
             sum(val_loss_history) / epochs
         )
