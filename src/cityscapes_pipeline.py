@@ -47,3 +47,81 @@ def preprocess(image, mask):
         image = image[:, i : i + crop[0], j : j + crop[1]]
         mask = mask[i : i + crop[0], j : j + crop[1]]
     return image, mask
+
+
+
+def train(
+	model, train_dataloader, val_dataloader,
+	device, criterion, optimizer, train_step_size, val_step_size,
+	save_every, save_location, save_prefix, epochs):
+	'''Training Function for Campvid
+	Params:
+		model				-> Model
+		train_dataloader	-> Train Data Loader
+		val_dataloader		-> Validation Data Loader
+		device				-> Training Device
+		criterion           -> Loss Function
+		optimizer			-> Optimizer
+		train_step_size		-> Training Step Size
+		val_step_size		-> Validation Step Size
+		save_every			-> Saving Checkpoint
+		save_location		-> Checkpoint Saving Location
+		save_prefix			-> Checkpoint Prefix
+		epochs				-> Number of Training epochs
+	'''
+	try:
+		os.mkdir(save_location)
+	except:
+		pass
+	train_loss_history, val_loss_history = [], []
+	for epoch in range(1, epochs + 1):
+		print('Epoch {}\n'.format(epoch))
+		# Training
+		train_loss = 0
+		model.train()
+		for step in tqdm(range(train_step_size)):
+			x_batch, y_batch = next(iter(train_dataloader))
+			x_batch = x_batch.squeeze().to(device)
+			y_batch = y_batch.squeeze().to(device)
+			optimizer.zero_grad()
+			out = model(x_batch.float())
+			loss = criterion(out, y_batch.long())
+			loss.backward()
+			optimizer.step()
+			train_loss += loss.item()
+		train_loss_history.append(train_loss / train_step_size)
+		print('\nTraining Loss: {}'.format(train_loss_history[-1]))
+		# Validation
+		val_loss = 0
+		model.eval()
+		for step in tqdm(range(val_step_size)):
+			x_val, y_val = next(iter(val_dataloader))
+			x_val = x_val.squeeze().to(device)
+			y_val = y_val.squeeze().to(device)
+			out = model(x_val.float())
+			out = out.data.max(1)[1]
+			val_loss += (y_val.long() - out.long()).float().mean()
+		val_loss_history.append(val_loss)
+		print('\nValidation Loss: {}'.format(val_loss))
+		# Checkpoints
+		if epoch % save_every == 0:
+			checkpoint = {
+				'epoch' : epoch,
+				'train_loss' : train_loss,
+				'val_loss' : val_loss,
+				'state_dict' : model.state_dict()
+			}
+			torch.save(
+				checkpoint,
+				'{}/{}-{}-{}-{}.pth'.format(
+					save_location, save_prefix,
+					epoch, train_loss, val_loss
+				)
+			)
+	print(
+        '\nTraining Done.\nTraining Mean Loss: {:6f}\nValidation Mean Loss: {:6f}'.format(
+            sum(train_loss_history) / epochs,
+            sum(val_loss_history) / epochs
+        )
+    )
+	return train_loss_history, val_loss_history

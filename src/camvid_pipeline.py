@@ -1,5 +1,5 @@
-import torch, cv2
 import numpy as np
+import torch, cv2, os
 from tqdm import tqdm
 from PIL import Image
 from matplotlib import pyplot as plt
@@ -126,6 +126,10 @@ def train(
 		save_prefix			-> Checkpoint Prefix
 		epochs				-> Number of Training epochs
 	'''
+	try:
+		os.mkdir(save_location)
+	except:
+		pass
 	train_loss_history, val_loss_history = [], []
 	for epoch in range(1, epochs + 1):
 		print('Epoch {}\n'.format(epoch))
