@@ -1,5 +1,6 @@
 import numpy as np
 import torch, cv2, os
+from time import time
 from tqdm import tqdm
 from PIL import Image
 from matplotlib import pyplot as plt
@@ -123,9 +124,11 @@ def train(
 	except:
 		pass
 	train_loss_history, val_loss_history = [], []
+	train_time = []
 	for epoch in range(1, epochs + 1):
 		print('Epoch {}\n'.format(epoch))
 		# Training
+		start = time()
 		train_loss = 0
 		model.train()
 		for step in tqdm(range(train_step_size)):
@@ -140,6 +143,8 @@ def train(
 			train_loss += loss.item()
 		train_loss_history.append(train_loss / train_step_size)
 		print('\nTraining Loss: {}'.format(train_loss_history[-1]))
+		train_time.append(time() - start)
+		print('Training Time: {}'.format(train_time[-1]))
 		# Validation
 		val_loss = 0
 		model.eval()
