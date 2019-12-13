@@ -5,18 +5,22 @@ from torch.nn import Module, ConvTranspose2d
 
 class Enet(Module):
 
-	def __init__(self, num_classes, encoder_relu=False, decoder_relu=True):
+	def __init__(self, num_classes, encoder_relu=False, decoder_relu=True, use_seperable_sobel_conv=True):
 		'''Enet Model
 		Reference: https://arxiv.org/abs/1606.02147
 		Params:
-			num_classes  -> Number of output classes
-			encoder_relu -> Use relu in encoder
-			decoder_relu -> Use relu in decoder
+			num_classes  				-> Number of output classes
+			encoder_relu 				-> Use relu in encoder
+			decoder_relu 				-> Use relu in decoder
+			use_seperable_sobel_conv	-> Use Seperable Sobel Conv in the Initial Block
 		'''
 		super().__init__()
 		
 		# Initial Block
-		self.initial_block = InitialBlock(3, 16, relu=encoder_relu)
+		self.initial_block = InitialBlock(
+			3, 16, relu=encoder_relu,
+			use_seperable_sobel_conv=use_seperable_sobel_conv
+		)
 		
 		### Encoding Stages ###
 

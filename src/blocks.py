@@ -1,25 +1,76 @@
 import torch
 from torch.nn import (
-	Module, Conv2d, ReLU, PReLU, Dropout2d,
+	Module, Conv2d, ReLU, PReLU, Dropout2d, AvgPool2d,
 	Upsample, MaxPool2d, Sequential, MaxUnpool2d,
 	BatchNorm2d, AdaptiveAvgPool2d, ConvTranspose2d
 )
 from torchvision.models import resnet50
 
 
+class SeperableSobelConv(Module):
+	
+	def __init__(
+		self, in_channels, out_channels,
+		stride=1, padding=0, dilation=1,
+		bias=False, padding_mode='zeros', full_aprox=True):
+		super(SeperableSobelConv, self).__init__()
+		self.stride = stride
+		self.sobel_x_conv = Conv2d(
+			in_channels, out_channels=in_channels,
+			groups=in_channels, kernel_size=(3, 3),
+			stride=stride, padding=padding, dilation=dilation,
+			bias=False, padding_mode=padding_mode
+		)
+		self.sobel_y_conv = Conv2d(
+			in_channels, out_channels=in_channels,
+			groups=in_channels, kernel_size=(3, 3),
+			stride=stride, padding=padding, dilation=dilation,
+			bias=False, padding_mode=padding_mode
+		)
+		self.sobel_x_conv.weight, self.sobel_y_conv.weight = self.get_sobel_filters(in_channels)
+		self.full_aprox = full_aprox
+		self.box_filt = AvgPool2d(3, stride=stride)
+		self.to_directional_magnitudes = Conv2d(
+			in_channels * (3 if self.full_aprox else 2),
+			out_channels, kernel_size=(1, 1), bias=bias
+		)
+
+	def get_sobel_filters(self, in_channels):
+		sobel_x = torch.Tensor(
+			[[1, 0, -1], [2, 0, -2], [1, 0, -1]]).unsqueeze(dim=0).unsqueeze(dim=1).expand((in_channels, 1, 3, 3))
+		soble_y = torch.Tensor(
+			[[-1, -2, -1], [0, 0, 0], [1, 2, 1]]).unsqueeze(dim=0).unsqueeze(dim=1).expand((in_channels, 1, 3, 3))
+		return torch.nn.Parameter(sobel_x, requires_grad=False), torch.nn.Parameter(soble_y, requires_grad=False)
+
+	def forward(self, x):
+		x_grad = self.sobel_x_conv(x)
+		y_grad = self.sobel_y_conv(x)
+		grads = torch.cat([x_grad, y_grad], dim=1)
+		if self.full_aprox:
+			# x_stride = x[:, :, ::self.stride, ::self.stride]
+			blured = self.box_filt(x)
+			grads = torch.cat([grads, blured], dim=1)
+		return self.to_directional_magnitudes(grads)
+
+
+
 class InitialBlock(Module):
 	
-	def __init__(self, in_channels, out_channels, bias=False, relu=True):
+	def __init__(self, in_channels, out_channels, bias=False, relu=True, use_seperable_sobel_conv=True):
 		'''Enet Initial Block
 		Reference: https://arxiv.org/abs/1606.02147
 		Params:
-			in_channels  -> Number of input channels
-			out_channels -> Number of output channels
-			bias		 -> Use bias in the convolution layer
-			relu		 -> Use relu activation or not
+			in_channels  				-> Number of input channels
+			out_channels 				-> Number of output channels
+			bias		 				-> Use bias in the convolution layer
+			relu		 				-> Use relu activation or not
+			use_seperable_sobel_conv	-> Use Seperable Sobel Conv in the Initial Block
 		'''
 		super().__init__()
-		self.main_branch = Conv2d(
+		self.main_branch = SeperableSobelConv(
+			in_channels, out_channels - 3,
+			stride=2, padding=1, bias=bias
+		) if use_seperable_sobel_conv else Conv2d(
 			in_channels, out_channels - 3,
 			kernel_size=3, stride=2,
 			padding=1, bias=bias
