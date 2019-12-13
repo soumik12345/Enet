@@ -5,7 +5,7 @@ from torch.nn import Module, ConvTranspose2d
 
 class Enet(Module):
 
-	def __init__(self, num_classes, encoder_relu=False, decoder_relu=True, use_seperable_sobel_conv=True):
+	def __init__(self, num_classes, encoder_relu=False, decoder_relu=True):
 		'''Enet Model
 		Reference: https://arxiv.org/abs/1606.02147
 		Params:
@@ -17,10 +17,7 @@ class Enet(Module):
 		super().__init__()
 		
 		# Initial Block
-		self.initial_block = InitialBlock(
-			3, 16, relu=encoder_relu,
-			use_seperable_sobel_conv=use_seperable_sobel_conv
-		)
+		self.initial_block = InitialBlock(3, 16, relu=encoder_relu)
 		
 		### Encoding Stages ###
 
