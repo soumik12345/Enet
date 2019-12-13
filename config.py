@@ -27,3 +27,21 @@ TRAINING_PARAMETERS = {
 	'batch_size' : 16,
 	'epochs' : 100
 }
+
+
+CAMVID_CONFIGS = {
+	'class_colors' : {
+		'obj0' : [255, 0, 0], # Sky
+		'obj1' : [0, 51, 204], # Building
+		'obj2' : [0, 255, 255], # Posts
+		'obj3' : [153, 102, 102], # Road
+		'obj4' : [51, 0, 102], # Pavement
+		'obj5' : [0, 255, 0], # Trees
+		'obj6' : [102, 153, 153], # Signs
+		'obj7' : [204, 0, 102], # Fence
+		'obj8' : [102, 0, 0], # Car
+		'obj9' : [0, 153, 102], # Pedestrian
+		'obj10' : [255, 255, 255], # Cyclist
+		'obj11' : [0, 0, 0] # bicycles
+	}
+}

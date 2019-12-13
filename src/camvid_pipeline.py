@@ -4,6 +4,7 @@ from tqdm import tqdm
 from PIL import Image
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset
+from config import CAMVID_CONFIGS
 
 
 def get_class_weights(loader, num_classes, c=1.02):
@@ -24,23 +25,15 @@ def read_image(image_file):
     return image
 
 
-def decode_segmap(image):
-    Sky = [128, 128, 128]
-    Building = [128, 0, 0]
-    Pole = [192, 192, 128]
-    Road_marking = [255, 69, 0]
-    Road = [128, 64, 128]
-    Pavement = [60, 40, 222]
-    Tree = [128, 128, 0]
-    SignSymbol = [192, 128, 128]
-    Fence = [64, 64, 128]
-    Car = [64, 0, 128]
-    Pedestrian = [64, 64, 0]
-    Bicyclist = [0, 128, 192]
-
-    label_colours = np.array([Sky, Building, Pole, Road_marking, Road, 
-                              Pavement, Tree, SignSymbol, Fence, Car, 
-                              Pedestrian, Bicyclist]).astype(np.uint8)
+def decode_segmap(image, color_dict):
+    label_colours = np.array([
+		color_dict['obj0'], color_dict['obj1'],
+		color_dict['obj2'], color_dict['obj3'],
+		color_dict['obj4'], color_dict['obj5'],
+		color_dict['obj6'], color_dict['obj7'],
+		color_dict['obj8'], color_dict['obj9'],
+		color_dict['obj10'], color_dict['obj11']
+	]).astype(np.uint8)
     r = np.zeros_like(image).astype(np.uint8)
     g = np.zeros_like(image).astype(np.uint8)
     b = np.zeros_like(image).astype(np.uint8)
@@ -48,7 +41,6 @@ def decode_segmap(image):
         r[image == l] = label_colours[l, 0]
         g[image == l] = label_colours[l, 1]
         b[image == l] = label_colours[l, 2]
-
     rgb = np.zeros((image.shape[0], image.shape[1], 3)).astype(np.uint8)
     rgb[:, :, 0] = b
     rgb[:, :, 1] = g
@@ -56,11 +48,11 @@ def decode_segmap(image):
     return rgb
 
 
-def predict_rgb(model, tensor):
+def predict_rgb(model, tensor, color_dict):
     with torch.no_grad():
         out = model(tensor.float()).squeeze(0)
     out = out.data.max(0)[1].cpu().numpy()
-    return decode_segmap(out)
+    return decode_segmap(out, color_dict)
 
 
 class CamVidDataset(Dataset):
