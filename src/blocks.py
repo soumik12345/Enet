@@ -1,4 +1,5 @@
 import torch
+from .activations import Activation
 from torch.nn import (
 	Module, Conv2d, ReLU, PReLU, Dropout2d, AvgPool2d,
 	Upsample, MaxPool2d, Sequential, MaxUnpool2d,
@@ -8,15 +9,14 @@ from torch.nn import (
 
 class InitialBlock(Module):
 	
-	def __init__(self, in_channels, out_channels, bias=False, relu=True):
+	def __init__(self, in_channels, out_channels, bias=False, activation='relu'):
 		'''Enet Initial Block
 		Reference: https://arxiv.org/abs/1606.02147
 		Params:
 			in_channels  				-> Number of input channels
 			out_channels 				-> Number of output channels
 			bias		 				-> Use bias in the convolution layer
-			relu		 				-> Use relu activation or not
-			use_seperable_sobel_conv	-> Use Seperable Sobel Conv in the Initial Block
+			activation					-> relu/prelu/mish
 		'''
 		super().__init__()
 		self.main_branch = Conv2d(
@@ -26,7 +26,7 @@ class InitialBlock(Module):
 		)
 		self.secondary_branch = MaxPool2d(3, stride=2, padding=1)
 		self.batch_norm = BatchNorm2d(out_channels)
-		self.activation = ReLU() if relu else PReLU()
+		self.activation = Activation(activation)
 
 	def forward(self, x):
 		'''InitialBlock Forward Pass'''
@@ -43,7 +43,7 @@ class RegularBottleneckBlock(Module):
 
 	def __init__(
 		self, channels, internal_ratio=4, kernel_size=3, padding=0,
-		dilation=1, asymmetric=False, dropout_prob=0, bias=False, relu=True):
+		dilation=1, asymmetric=False, dropout_prob=0, bias=False, activation='relu'):
 		'''Enet Regular Bottleneck Block
 		Reference: https://arxiv.org/abs/1606.02147
 		Params:
@@ -55,7 +55,7 @@ class RegularBottleneckBlock(Module):
 			asymmetric		-> conv layer, block 2, main branch is assymetric if true
 			dropout_prob	-> Probability for dropout
 			bias			-> Use a bias or not
-			relu			-> Use ReLU activation if true
+			activation		-> relu/prelu/mish
 		'''
 		
 		super().__init__()
@@ -70,7 +70,7 @@ class RegularBottleneckBlock(Module):
 				kernel_size=1, stride=1, bias=bias
 			),
 			BatchNorm2d(internal_channels),
-			ReLU() if relu else PReLU()
+			Activation(activation)
 		)
 
 		# Block 2
@@ -82,14 +82,14 @@ class RegularBottleneckBlock(Module):
 					padding=(padding, 0), dilation=dilation, bias=bias
 				),
 				BatchNorm2d(internal_channels),
-				ReLU() if relu else PReLU(),
+				Activation(activation),
 				Conv2d(
 					internal_channels, internal_channels,
 					kernel_size=(1, kernel_size), stride=1,
 					padding=(0, padding), dilation=dilation, bias=bias
 				),
 				BatchNorm2d(internal_channels),
-				ReLU() if relu else PReLU(),
+				Activation(activation),
 			)
 		else:
 			self.main_conv_block_2 = Sequential(
@@ -99,7 +99,7 @@ class RegularBottleneckBlock(Module):
 					padding=padding, dilation=dilation, bias=bias
 				),
 				BatchNorm2d(internal_channels),
-				ReLU() if relu else PReLU(),
+				Activation(activation),
 			)
 		
 		# Block 3 Conv 1x1
@@ -109,14 +109,14 @@ class RegularBottleneckBlock(Module):
 				kernel_size=1, stride=1, bias=bias
 			),
 			BatchNorm2d(channels),
-			ReLU() if relu else PReLU(),
+			Activation(activation),
 		)
 
 		# Dropout Regularization
 		self.dropout = Dropout2d(p=dropout_prob)
 
 		# Activation
-		self.activation = ReLU() if relu else PReLU()
+		self.activation = Activation(activation)
 	
 
 	def forward(self, x):
@@ -136,7 +136,7 @@ class DownsampleBottleneckBlock(Module):
 
 	def __init__(
 		self, in_channels, out_channels, internal_ratio=4,
-		return_indices=False, dropout_prob=0, bias=False, relu=True):
+		return_indices=False, dropout_prob=0, bias=False, activation='relu'):
 		'''Enet DownSampling Bottleneck Block
 		Reference: https://arxiv.org/abs/1606.02147
 		Params:
@@ -146,7 +146,7 @@ class DownsampleBottleneckBlock(Module):
 			return_indices	-> Returns max indices if true
 			dropout_prob	-> Probability for dropout
 			bias			-> Use a bias or not
-			relu			-> Use ReLU activation if true
+			activation		-> relu/prelu/mish
 		'''
 		super().__init__()
 		internal_channels = in_channels // internal_ratio
@@ -161,7 +161,7 @@ class DownsampleBottleneckBlock(Module):
 				kernel_size=2, stride=2, bias=bias
 			),
 			BatchNorm2d(internal_channels),
-			ReLU() if relu else PReLU()
+			Activation(activation)
 		)
 
 		# Block 2 Conv 3x3
@@ -171,7 +171,7 @@ class DownsampleBottleneckBlock(Module):
 				kernel_size=3, stride=1, padding=1, bias=bias
 			),
 			BatchNorm2d(internal_channels),
-			ReLU() if relu else PReLU()
+			Activation(activation)
 		)
 
 		# Block 2 Conv 1x1
@@ -181,7 +181,7 @@ class DownsampleBottleneckBlock(Module):
 				kernel_size=1, stride=1, bias=bias
 			),
 			BatchNorm2d(out_channels),
-			ReLU() if relu else PReLU()
+			Activation(activation)
 		)
 
 		### Secondary Branch ###
@@ -194,7 +194,7 @@ class DownsampleBottleneckBlock(Module):
 		self.dropout = Dropout2d(p=dropout_prob)
 
 		# Activation
-		self.activation = ReLU() if relu else PReLU()
+		self.activation = Activation(activation)
 	
 
 	def forward(self, x):
@@ -230,7 +230,7 @@ class UpsampleBottleneckBlock(Module):
 	def __init__(
 		self, in_channels, out_channels,
 		internal_ratio=4, dropout_prob=0,
-		bias=False, relu=True):
+		bias=False, activation='relu'):
 		'''Enet Upsampling Bottleneck Block
 		Reference: https://arxiv.org/abs/1606.02147
 		Params:
@@ -239,7 +239,7 @@ class UpsampleBottleneckBlock(Module):
 			internal_ratio	-> Scale factor for channels
 			dropout_prob	-> Probability for dropout
 			bias			-> Use a bias or not
-			relu			-> Use ReLU activation if true
+			activation		-> relu/prelu/mish
 		'''
 		super().__init__()
 		internal_channels = in_channels // internal_ratio
@@ -253,7 +253,7 @@ class UpsampleBottleneckBlock(Module):
 				kernel_size=1, bias=bias
 			),
 			BatchNorm2d(internal_channels),
-			ReLU() if relu else PReLU()
+			Activation(activation)
 		)
 
 		# Block 2 Transposed Convolution
@@ -262,7 +262,7 @@ class UpsampleBottleneckBlock(Module):
 			kernel_size=2, stride=2, bias=bias
 		)
 		self.main_branch_bn_2 = BatchNorm2d(internal_channels)
-		self.main_branch_act_2 = ReLU() if relu else PReLU
+		self.main_branch_act_2 = Activation(activation)
 
 		# Block 3 Conv 1x1
 		self.main_branch_conv_3 = Sequential(
@@ -271,7 +271,7 @@ class UpsampleBottleneckBlock(Module):
 				kernel_size=1, bias=bias
 			),
 			BatchNorm2d(out_channels),
-			ReLU() if relu else PReLU()
+			Activation(activation)
 		)
 
 		### Secondary Branch ###
@@ -288,7 +288,7 @@ class UpsampleBottleneckBlock(Module):
 		self.dropout = Dropout2d(p=dropout_prob)
 
 		# Activation
-		self.activation = ReLU() if relu else PReLU()
+		self.activation = Activation(activation)
 	
 
 	def forward(self, x, max_indices, output_size):
