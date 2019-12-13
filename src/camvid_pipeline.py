@@ -178,4 +178,4 @@ def train(
             sum(val_loss_history) / epochs
         )
     )
-	return train_loss_history, val_loss_history
+	return train_loss_history, val_loss_history, train_time
