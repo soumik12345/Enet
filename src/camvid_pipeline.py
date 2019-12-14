@@ -3,9 +3,10 @@ import torch, cv2, os
 from time import time
 from tqdm import tqdm
 from PIL import Image
+from config import CAMVID_CONFIGS
 from matplotlib import pyplot as plt
 from torch.utils.data import Dataset
-from config import CAMVID_CONFIGS
+from torchvision.transforms import ToPILImage
 
 
 def get_class_weights(loader, num_classes, c=1.02):
@@ -56,6 +57,44 @@ def predict_rgb(model, tensor, color_dict):
     return decode_segmap(out, color_dict)
 
 
+
+def visualize_batch(loader, model, color_dict, n_images):
+	'''Visualize batch from model
+	Params:
+		loader		-> Data loader
+		model		-> Model for prediction
+		color_dict	-> Class color dict
+		n_images	-> Number of images (< batch size)
+	'''
+	x_batch, y_batch = next(iter(loader))
+	fig, axes = plt.subplots(nrows = n_images, ncols = 3, figsize = (16, 16))
+	plt.setp(axes.flat, xticks = [], yticks = [])
+	c = 1
+	for i, ax in enumerate(axes.flat):
+		if i % 3 == 0:
+			ax.imshow(ToPILImage()(x_batch[c]))
+			ax.set_xlabel('Image_' + str(c))
+		elif i % 3 == 1:
+			ax.imshow(
+				decode_segmap(
+					y_batch[c],
+					color_dict
+				)
+			)
+			ax.set_xlabel('Ground_Truth_' + str(c))
+		elif i % 3 == 2:
+			ax.imshow(
+				predict_rgb(
+					enet,
+					x_batch[c].unsqueeze(0).to(device),
+					color_dict
+				)
+			)
+			ax.set_xlabel('Predicted_Mask_' + str(c))
+			c += 1
+	plt.show()
+
+
 class CamVidDataset(Dataset):
 
 	def __init__(self, images, labels, height, width):
@@ -103,7 +142,7 @@ class CamVidDataset(Dataset):
 def train(
 	model, train_dataloader, val_dataloader,
 	device, criterion, optimizer, train_step_size, val_step_size,
-	save_every, save_location, save_prefix, epochs):
+	visualize_every, save_every, save_location, save_prefix, epochs):
 	'''Training Function for Campvid
 	Params:
 		model				-> Model
@@ -114,6 +153,7 @@ def train(
 		optimizer			-> Optimizer
 		train_step_size		-> Training Step Size
 		val_step_size		-> Validation Step Size
+		visualize_every		-> Visualization Checkpoint
 		save_every			-> Saving Checkpoint
 		save_location		-> Checkpoint Saving Location
 		save_prefix			-> Checkpoint Prefix
@@ -144,7 +184,7 @@ def train(
 		train_loss_history.append(train_loss / train_step_size)
 		print('\nTraining Loss: {}'.format(train_loss_history[-1]))
 		train_time.append(time() - start)
-		print('Training Time: {}'.format(train_time[-1]))
+		print('Training Time: {} seconds'.format(train_time[-1]))
 		# Validation
 		val_loss = 0
 		model.eval()
@@ -157,6 +197,9 @@ def train(
 			val_loss += (y_val.long() - out.long()).float().mean()
 		val_loss_history.append(val_loss)
 		print('\nValidation Loss: {}'.format(val_loss))
+		# Visualization
+		if epoch % visualize_every == 0:
+			visualize_batch(val_dataloader, model, CAMVID_CONFIGS['class_colors'], 1)
 		# Checkpoints
 		if epoch % save_every == 0:
 			checkpoint = {
@@ -172,6 +215,7 @@ def train(
 					epoch, train_loss, val_loss
 				)
 			)
+			print('Checkpoint saved')
 	print(
         '\nTraining Done.\nTraining Mean Loss: {:6f}\nValidation Mean Loss: {:6f}'.format(
             sum(train_loss_history) / epochs,
