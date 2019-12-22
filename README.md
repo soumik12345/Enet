@@ -2,7 +2,7 @@
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/soumik12345/Enet/master)
 
-Pytorch Implementation of ENet: A Deep Neural Network Architecture for Real-Time Semantic Segmentation (https://arxiv.org/abs/1606.02147).
+Pytorch Implementation of ENet: A Deep Neural Network Architecture for Real-Time Semantic Segmentation (https://arxiv.org/abs/1606.02147). It is currently the 13th Best Model for [Real-Time Semantic Segmentation on Cityscapes test     ](https://paperswithcode.com/sota/real-time-semantic-segmentation-on-cityscapes).
 
 ![Training Results](./assets/enet_camvid_gif-1.gif)
 
@@ -11,7 +11,7 @@ Pytorch Implementation of ENet: A Deep Neural Network Architecture for Real-Time
 - [Enet with PReLU Encoder on CamVid](https://github.com/soumik12345/Enet/blob/master/Enet_CamVid.ipynb)
 - [Enet with Mish Encoder on CamVid](https://github.com/soumik12345/Enet/blob/master/Enet_CamVid_Mish.ipynb)
 
-## Training Results on CamVid
+## Training Results on [CamVid Dataset](https://www.kaggle.com/jcoral02/camvid)
 
 ### Inference on Training Data
 
