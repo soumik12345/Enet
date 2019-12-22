@@ -8,6 +8,8 @@ Pytorch Implementation of ENet: A Deep Neural Network Architecture for Real-Time
 
 ### Training Notebooks
 
+**Note:** Try using the Binder badge to inspect the notebooks.
+
 - [Enet with PReLU Encoder on CamVid](https://github.com/soumik12345/Enet/blob/master/Enet_CamVid.ipynb)
 - [Enet with Mish Encoder on CamVid](https://github.com/soumik12345/Enet/blob/master/Enet_CamVid_Mish.ipynb)
 
