@@ -32,6 +32,7 @@ Pytorch Implementation of ENet: A Deep Neural Network Architecture for Real-Time
 - [ ] Experiment to find best Mish Version of Enet
 - [ ] Repeat Same experiments for Cityscapes Dataset
 - [ ] Repeat Same experiments for SUN RGB-D Dataset
+- [ ] Implement Lovasz Softmax Loss
 
 
 ## References
