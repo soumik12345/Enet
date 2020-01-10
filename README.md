@@ -30,7 +30,7 @@ Pytorch Implementation of ENet: A Deep Neural Network Architecture for Real-Time
 - [x] Encorporate Custom Activations for Codebase
 - [x] Train Enet on CamVid
 - [x] Train Enet with Mish Encoder on CamVid
-- [ ] Experiment to find best Mish Version of Enet
+- [x] Experiment to find best Mish Version of Enet -> PReLU encoder + Mish Decoder
 - [ ] Repeat Same experiments for Cityscapes Dataset
 - [ ] Repeat Same experiments for SUN RGB-D Dataset
 - [ ] Implement Lovasz Softmax Loss
