@@ -2,6 +2,7 @@
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/soumik12345/Enet/master)
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/enet-a-deep-neural-network-architecture-for/real-time-semantic-segmentation-on-cityscapes)](https://paperswithcode.com/sota/real-time-semantic-segmentation-on-cityscapes?p=enet-a-deep-neural-network-architecture-for)
+[![HitCount](http://hits.dwyl.io/soumik12345/Enet.svg)](http://hits.dwyl.io/soumik12345/Enet)
 
 Pytorch Implementation of ENet: A Deep Neural Network Architecture for Real-Time Semantic Segmentation (https://arxiv.org/abs/1606.02147). It is currently the 13th Best Model for [Real-Time Semantic Segmentation on Cityscapes test     ](https://paperswithcode.com/sota/real-time-semantic-segmentation-on-cityscapes).
 
